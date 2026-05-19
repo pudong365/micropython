@@ -1,0 +1,41 @@
+name: Build ESP32-S3 Firmware with Compression
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git wget flex bison gperf python3 python3-pip python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Build mpy-cross
+      run: make -C mpy-cross -j2
+
+    - name: Build ESP32-S3 firmware
+      run: |
+        cd ports/esp32
+        make submodules
+        make BOARD=ESP32_GENERIC_S3
+
+    - name: Upload firmware
+      uses: actions/upload-artifact@v4
+      with:
+        name: micropython-firmware
+        path: ports/esp32/build-ESP32_GENERIC_S3/firmware.bin
