@@ -417,3 +417,10 @@ void boardctrl_startup(void);
 #ifndef MICROPY_ESP_IDF_ENTRY
 #define MICROPY_ESP_IDF_ENTRY app_main
 #endif
+// Code can override this to provide a custom ESP-IDF entry point.
+#ifndef MICROPY_ESP_IDF_ENTRY
+#define MICROPY_ESP_IDF_ENTRY app_main
+#endif
+
+// 开启 deflate 压缩功能
+#define MICROPY_PY_DEFLATE_COMPRESS (1)
