@@ -1,0 +1,41 @@
+name: Build ESP32-S3 Firmware with Compression
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Install ESP-IDF
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: v5.0.4
+        target: esp32s3
+
+    - name: Build mpy-cross
+      run: |
+        . $IDF_PATH/export.sh
+        make -C mpy-cross -j2
+
+    - name: Build ESP32-S3 firmware
+      run: |
+        . $IDF_PATH/export.sh
+        cd ports/esp32
+        make submodules
+        make BOARD=ESP32_GENERIC_S3
+      shell: bash
+
+    - name: Upload firmware
+      uses: actions/upload-artifact@v4
+      with:
+        name: micropython-firmware
+        path: ports/esp32/build-ESP32_GENERIC_S3/firmware.bin
