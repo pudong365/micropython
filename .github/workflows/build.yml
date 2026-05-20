@@ -25,6 +25,8 @@ jobs:
         target: esp32s3
         path: ports/esp32
         command: |
+          # 删除损坏的 lockfiles
+          rm -f lockfiles/dependencies.lock.esp32s3
           make submodules
           make BOARD=ESP32_GENERIC_S3
 
