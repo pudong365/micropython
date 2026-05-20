@@ -15,22 +15,23 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: Install ESP-IDF (no build)
+    - name: Install ESP-IDF
       uses: espressif/esp-idf-ci-action@v1
       with:
         esp_idf_version: v5.0.4
         target: esp32s3
-        # 添加这行，禁止自动编译
         command: echo "ESP-IDF installed"
 
     - name: Build mpy-cross
       run: |
+        export IDF_PATH=/opt/esp/idf
         . $IDF_PATH/export.sh
         make -C mpy-cross -j2
       shell: bash
 
     - name: Build ESP32-S3 firmware
       run: |
+        export IDF_PATH=/opt/esp/idf
         . $IDF_PATH/export.sh
         cd ports/esp32
         make submodules
