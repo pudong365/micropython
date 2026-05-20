@@ -15,11 +15,12 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: Install ESP-IDF
+    - name: Install ESP-IDF (no auto build)
       uses: espressif/esp-idf-ci-action@v1
       with:
         esp_idf_version: v5.0.4
         target: esp32s3
+        command: echo "ESP-IDF installed"   # 关键：防止自动编译
 
     - name: Build mpy-cross
       run: |
