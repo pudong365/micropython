@@ -67,6 +67,7 @@ set(LOCKFILE_PATH lockfiles/dependencies.lock.${IDF_TARGET})
 idf_build_set_property(DEPENDENCIES_LOCK ${LOCKFILE_PATH})
 
 # Define the project.
+idf_build_set_property(COMPONENT_REQUIRES esp_libc)
 project(micropython)
 
 # Check for lockfile changes and either warn or error depending on build type
