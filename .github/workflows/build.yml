@@ -17,10 +17,13 @@ jobs:
         submodules: 'recursive'
 
     - name: Build mpy-cross
-      run: make -C mpy-cross -j2
+      run: |
+        . /opt/esp/idf/export.sh
+        make -C mpy-cross -j2
 
     - name: Build ESP32-S3 firmware
       run: |
+        . /opt/esp/idf/export.sh
         cd ports/esp32
         make submodules
         make BOARD=ESP32_GENERIC_S3
