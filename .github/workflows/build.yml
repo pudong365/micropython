@@ -21,7 +21,7 @@ jobs:
     - name: Build ESP32-S3 firmware with compression
       uses: espressif/esp-idf-ci-action@v1
       with:
-        esp_idf_version: v5.3.0
+        esp_idf_version: latest
         target: esp32s3
         path: ports/esp32
         command: |
