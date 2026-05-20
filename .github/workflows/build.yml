@@ -21,12 +21,15 @@ jobs:
     - name: Build ESP32-S3 firmware with compression
       uses: espressif/esp-idf-ci-action@v1
       with:
-        esp_idf_version: v5.1.4
+        esp_idf_version: v5.3.0               # 关键修改：使用 v5.3.0
         target: esp32s3
         path: ports/esp32
         command: |
-          # 删除损坏的 lockfiles
+          # 删除可能损坏的锁文件
           rm -f lockfiles/dependencies.lock.esp32s3
+          # 清除旧的构建目录
+          rm -rf build-ESP32_GENERIC_S3
+          # 重新生成子模块并编译
           make submodules
           make BOARD=ESP32_GENERIC_S3
 
