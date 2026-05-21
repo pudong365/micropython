@@ -815,7 +815,7 @@ _Static_assert(WIFI_AUTH_MAX == 17, "Synchronize WIFI_AUTH_XXX constants with th
 #elif ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
 _Static_assert(WIFI_AUTH_MAX == 16, "Synchronize WIFI_AUTH_XXX constants with the ESP-IDF. Look at esp-idf/components/esp_wifi/include/esp_wifi_types_generic.h");
 #elif ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
-_Static_assert(WIFI_AUTH_MAX == 14, "Synchronize WIFI_AUTH_XXX constants with the ESP-IDF. Look at esp-idf/components/esp_wifi/include/esp_wifi_types_generic.h");
+_Static_assert(WIFI_AUTH_MAX == 15, "Synchronize WIFI_AUTH_XXX constants with the ESP-IDF. Look at esp-idf/components/esp_wifi/include/esp_wifi_types_generic.h");
 #else
 #error "Error in macro logic, all supported versions should be covered."
 #endif
