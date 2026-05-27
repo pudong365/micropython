@@ -28,39 +28,49 @@ jobs:
 
     - name: Build mpy-cross
       run: |
-        source $HOME/esp-idf/export.sh
         cd $GITHUB_WORKSPACE/mpy-cross
         make
 
     - name: Configure and Build MicroPython firmware
       run: |
+        # 设置 ESP-IDF 环境
         source $HOME/esp-idf/export.sh
+        
         cd $GITHUB_WORKSPACE/ports/esp32
         
-        # 清理旧配置
-        rm -rf build sdkconfig
+        # 清理
+        make clean || true
         
         # 设置目标芯片为 ESP32-S3
-        idf.py set-target esp32s3
+        # 通过 BOARD 变量指定板子类型，或者修改 Makefile
+        # 对于 ESP32-S3，通常使用 BOARD=GENERIC_S3
         
-        # 关键：通过环境变量设置 Flash 和 PSRAM（参照 OpenMV 成功经验）
-        export CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
-        export CONFIG_SPIRAM=y
-        export CONFIG_SPIRAM_MODE_OCT=y
-        export CONFIG_SPIRAM_SIZE=8
-        
-        # 可选：启用更多 MicroPython 特性
-        export CONFIG_MICROPY_ESP32_PSRAM=y
+        # 创建配置文件来启用 16MB Flash 和 Octal PSRAM
+        cat > boards/GENERIC_S3/mpconfigboard.h << 'EOF'
+// Enable 16MB Flash and 8MB Octal PSRAM
+#define MICROPY_HW_BOARD_NAME "ESP32-S3-N16R8"
+#define MICROPY_HW_MCU_NAME   "ESP32-S3"
+#define MICROPY_PY_BLUETOOTH  (1)
+#define MICROPY_BLE_IRQ_MULTIPLE (1)
+
+// Flash size
+#define MICROPY_HW_SPIFLASH_SIZE_BITS (16 * 1024 * 1024 * 8)
+
+// PSRAM settings for Octal PSRAM
+#define MICROPY_HW_ENABLE_PSRAM       (1)
+#define MICROPY_HW_PSRAM_OCTAL        (1)
+#define MICROPY_HW_PSRAM_SIZE         (8 * 1024 * 1024)
+EOF
         
         # 编译
-        idf.py build
+        make BOARD=GENERIC_S3
 
     - name: Upload firmware artifacts
       uses: actions/upload-artifact@v4
       with:
         name: micropython_esp32s3_n16r8_firmware
         path: |
-          ${{ github.workspace }}/ports/esp32/build/bootloader/bootloader.bin
-          ${{ github.workspace }}/ports/esp32/build/partition_table/partition-table.bin
-          ${{ github.workspace }}/ports/esp32/build/micropython.bin
+          ${{ github.workspace }}/ports/esp32/build-GENERIC_S3/bootloader/bootloader.bin
+          ${{ github.workspace }}/ports/esp32/build-GENERIC_S3/partition_table/partition-table.bin
+          ${{ github.workspace }}/ports/esp32/build-GENERIC_S3/micropython.bin
         retention-days: 30
