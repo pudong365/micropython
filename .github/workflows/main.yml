@@ -1,0 +1,66 @@
+name: Build MicroPython ESP32-S3 Firmware for N16R8
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Install ESP-IDF dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git wget flex bison gperf python3 python3-pip \
+          python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util \
+          libusb-1.0-0
+
+    - name: Install ESP-IDF v4.4.8
+      run: |
+        git clone -b release/v4.4 --recursive https://github.com/espressif/esp-idf.git $HOME/esp-idf
+        cd $HOME/esp-idf
+        ./install.sh
+
+    - name: Build mpy-cross
+      run: |
+        source $HOME/esp-idf/export.sh
+        cd $GITHUB_WORKSPACE/mpy-cross
+        make
+
+    - name: Configure and Build MicroPython firmware
+      run: |
+        source $HOME/esp-idf/export.sh
+        cd $GITHUB_WORKSPACE/ports/esp32
+        
+        # 清理旧配置
+        rm -rf build sdkconfig
+        
+        # 设置目标芯片为 ESP32-S3
+        idf.py set-target esp32s3
+        
+        # 关键：通过环境变量设置 Flash 和 PSRAM（参照 OpenMV 成功经验）
+        export CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+        export CONFIG_SPIRAM=y
+        export CONFIG_SPIRAM_MODE_OCT=y
+        export CONFIG_SPIRAM_SIZE=8
+        
+        # 可选：启用更多 MicroPython 特性
+        export CONFIG_MICROPY_ESP32_PSRAM=y
+        
+        # 编译
+        idf.py build
+
+    - name: Upload firmware artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: micropython_esp32s3_n16r8_firmware
+        path: |
+          ${{ github.workspace }}/ports/esp32/build/bootloader/bootloader.bin
+          ${{ github.workspace }}/ports/esp32/build/partition_table/partition-table.bin
+          ${{ github.workspace }}/ports/esp32/build/micropython.bin
+        retention-days: 30
