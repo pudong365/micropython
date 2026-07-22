@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: "3.8"
 
-      - name: Download ESP-IDF v4.4 official github
+      - name: Install ESP-IDF v4.4
         run: |
           git clone --depth 1 -b v4.4 https://github.com/espressif/esp-idf.git ~/esp-idf
           cd ~/esp-idf
@@ -26,9 +26,17 @@ jobs:
           export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
           ./install.sh esp32s3
 
-      - name: 查看所有支持开发板
+      - name: Compile ESP32_GENERIC_S3 Firmware
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
-          echo "可用板子文件夹："
-          ls boards/
+          export CMAKE_GENERATOR="Unix Makefiles"
+          # 板子严格填写列表内原名：ESP32_GENERIC_S3
+          EXTRA_CFLAGS="-Wno-error" make BOARD=ESP32_GENERIC_S3 GENERATE_CERTS=0 -j1
+
+      - name: Upload compiled firmware.bin
+        uses: actions/upload-artifact@v4
+        with:
+          # 编译输出文件夹固定 build-板子名称
+          path: ports/esp32/build-ESP32_GENERIC_S3/firmware.bin
+          name: esp32s3_frozen_custom_firmware
