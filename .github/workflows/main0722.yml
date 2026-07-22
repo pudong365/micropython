@@ -30,7 +30,28 @@ jobs:
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
-          # 固定使用兼容性最好的 UM_TINYS3
+          
+          # 1. 先尝试清理可能存在的部分子模块
+          make BOARD=UM_TINYS3 clean-submodules || true
+          
+          # 2. 主动、显式地初始化并拉取子模块（使用 -j1 避免并发问题）
+          echo "正在初始化子模块..."
+          make BOARD=UM_TINYS3 submodules -j1
+          
+          # 3. 关键调试步骤：检查 berkeley-db 目录是否真的被拉取下来了
+          echo "检查 berkeley-db 目录内容："
+          ls -la ../../lib/berkeley-db/ || echo "错误：berkeley-db 目录不存在！"
+          
+          # 4. 如果上面检查发现目录为空或不存在，可以尝试手动 git 拉取
+          if [ ! -d "../../lib/berkeley-db" ] || [ -z "$(ls -A ../../lib/berkeley-db)" ]; then
+            echo "手动拉取 berkeley-db 子模块..."
+            cd ../../
+            git submodule update --init lib/berkeley-db
+            cd ports/esp32
+          fi
+          
+          # 5. 再次确认后开始编译
+          echo "开始编译..."
           EXTRA_CFLAGS="-Wno-error" make BOARD=UM_TINYS3 GENERATE_CERTS=0 -j1
 
       - name: Download bin
