@@ -8,31 +8,32 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 拉取源码
+      - name: Checkout MicroPython source
         uses: actions/checkout@v4
         with:
           submodules: false
 
-      - name: 配置 Python3.8
+      - name: Setup Python 3.8
         uses: actions/setup-python@v5
         with:
           python-version: "3.8"
 
-      - name: 下载 ESP-IDF v4.4（Gitee国内官方仓库）
+      - name: Download ESP-IDF v4.4 official github
         run: |
-          git clone --depth 1 -b v4.4 shturl.cc/dlfX88ku7t1fjiQh6WDkAcVvVPo8H1zfguDt ~/esp-idf
+          git clone --depth 1 -b v4.4 https://github.com/espressif/esp-idf.git ~/esp-idf
           cd ~/esp-idf
+          # 工具链、资源全部走乐鑫国内服务器下载
           export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
           export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
           ./install.sh esp32s3
 
-      - name: 编译ESP32-S3固件
+      - name: Build ESP32-S3 firmware
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
           EXTRA_CFLAGS="-Wno-error" make BOARD=ESP32_GENERIC_S3 GENERATE_CERTS=0 -j2
 
-      - name: 上传成品固件
+      - name: Upload compiled firmware
         uses: actions/upload-artifact@v4
         with:
           path: ports/esp32/build/firmware.bin
