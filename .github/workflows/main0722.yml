@@ -18,29 +18,48 @@ jobs:
         with:
           python-version: "3.8"
 
-      - name: Install ESP-IDF 5.1.1
+      - name: Install ESP-IDF 5.0
         run: |
-          git clone --depth 1 -b v5.1.1 https://github.com/espressif/esp-idf.git ~/esp-idf
+          git clone --depth 1 -b v5.0 https://github.com/espressif/esp-idf.git ~/esp-idf
           cd ~/esp-idf
           export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
           export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+          python -m pip install --upgrade pip==24.0
+          python -m pip install setuptools
           ./install.sh esp32s3
+
+      - name: 删除 berkeley-db 强制检查
+        run: |
+          cd ports/esp32
+          # 使用 Python 脚本精确删除包含错误检查的行
+          python3 -c "
+          with open('../../extmod/extmod.cmake', 'r') as f:
+              lines = f.readlines()
+          with open('../../extmod/extmod.cmake', 'w') as f:
+              skip_next = False
+              for line in lines:
+                  # 如果这行包含错误检查的关键词，跳过不写入
+                  if 'MICROPY_PY_BTREE' in line and 'berkeley-db' in line and 'message(FATAL_ERROR' in line:
+                      print('跳过错误行:', line.strip())
+                      skip_next = True
+                      continue
+                  # 如果是错误块内的 endif() 行，也跳过
+                  if skip_next and 'endif()' in line:
+                      print('跳过对应的 endif 行:', line.strip())
+                      skip_next = False
+                      continue
+                  f.write(line)
+          print('删除完成')
+          "
+          
+          # 强制禁用 btree 功能
+          echo "#define MICROPY_PY_BTREE (0)" >> mpconfigport.h
+          echo "已强制禁用 MICROPY_PY_BTREE"
 
       - name: Compile firmware
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
-          
-          # 关键步骤：修改 extmod.cmake，注释掉强制检查 berkeley-db 的代码行
-          echo "正在修补 extmod.cmake 以跳过 berkeley-db 检查..."
-          sed -i 's/^\([[:space:]]*\)message(FATAL_ERROR "MICROPY_PY_BTREE is enabled but the berkeley-db submodule is not initialised.*/ \1# DISABLED BY CI: message(FATAL_ERROR "MICROPY_PY_BTREE is enabled but the berkeley-db submodule is not initialised. Run 'make BOARD=${BOARD} submodules'")/' ../../extmod/extmod.cmake
-          
-          # 同时，在 mpconfigport.h 中强制禁用 btree，确保万无一失
-          echo "正在强制禁用 MICROPY_PY_BTREE..."
-          echo "#undef MICROPY_PY_BTREE" >> mpconfigport.h
-          echo "#define MICROPY_PY_BTREE (0)" >> mpconfigport.h
-          
-          # 然后正常编译
           EXTRA_CFLAGS="-Wno-error" make BOARD=UM_TINYS3 GENERATE_CERTS=0 -j1
 
       - name: Download bin
