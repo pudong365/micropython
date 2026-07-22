@@ -1,29 +1,41 @@
-name: renesas-ra port
-
+name: Build ESP32-S3 MicroPython Only
 on:
   push:
-  pull_request:
-    paths:
-      - '.github/workflows/*.yml'
-      - 'tools/**'
-      - 'py/**'
-      - 'extmod/**'
-      - 'shared/**'
-      - 'lib/**'
-      - 'drivers/**'
-      - 'ports/renesas-ra/**'
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ master, main ]
+  workflow_dispatch:
 
 jobs:
-  build_renesas_ra_board:
+  build_esp32:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
-    - name: Install packages
-      run: tools/ci.sh renesas_ra_setup
-    - name: Build
-      run: tools/ci.sh renesas_ra_board_build
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
 
+      - name: Install Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
+
+      - name: Fetch ESP-IDF v4.4
+        run: |
+          git clone -b v4.4 https://gitee.com/espressif/esp-idf.git ~/esp-idf
+          cd ~/esp-idf
+          export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
+          export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+          ./install.sh esp32s3
+
+      - name: Compile ESP32-S3 firmware
+        run: |
+          source ~/esp-idf/export.sh
+          # 精准进入esp32目录，只编译ESP32系列
+          cd ports/esp32
+          # 关闭警告转错误，宽松编译；指定S3通用开发板
+          CFLAGS="-Wno-error" make BOARD=ESP32_GENERIC_S3 GENERATE_CERTS=0 -j4
+
+      - name: Upload compiled firmware
+        uses: actions/upload-artifact@v4
+        with:
+          path: ports/esp32/build/firmware.bin
+          name: esp32s3_frozen_firmware
