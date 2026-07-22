@@ -22,7 +22,6 @@ jobs:
         run: |
           git clone --depth 1 -b v4.4 https://github.com/espressif/esp-idf.git ~/esp-idf
           cd ~/esp-idf
-          # 工具链、资源全部走乐鑫国内服务器下载
           export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
           export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
           ./install.sh esp32s3
@@ -31,10 +30,11 @@ jobs:
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
-          EXTRA_CFLAGS="-Wno-error" make BOARD=ESP32_GENERIC_S3 GENERATE_CERTS=0 -j2
+          export CMAKE_GENERATOR="Unix Makefiles"
+          EXTRA_CFLAGS="-Wno-error" make BOARD=ESP32S3 GENERATE_CERTS=0 -j1
 
       - name: Upload compiled firmware
         uses: actions/upload-artifact@v4
         with:
-          path: ports/esp32/build/firmware.bin
+          path: ports/esp32/build-ESP32S3/firmware.bin
           name: esp32s3_frozen_firmware
