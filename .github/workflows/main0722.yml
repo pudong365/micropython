@@ -1,4 +1,4 @@
-name: Build ESP32S3 Firmware
+name: ESP32 固件编译调试
 on:
   push:
     branches: [master, main]
@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: 拉取源码
         uses: actions/checkout@v4
         with:
           submodules: false
@@ -18,23 +18,24 @@ jobs:
         with:
           python-version: "3.8"
 
-      - name: Install ESP-IDF 5.0
+      - name: 安装ESP-IDF 4.4 稳定版
         run: |
-          git clone --depth 1 -b v5.0 https://github.com/espressif/esp-idf.git ~/esp-idf
+          git clone --depth 1 -b v4.4 https://github.com/espressif/esp-idf.git ~/esp-idf
           cd ~/esp-idf
           export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
           export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
-          ./install.sh esp32s3
+          ./install.sh esp32c3
 
-      - name: Compile firmware
+      - name: 编译固件 ESP32_GENERIC_C3
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
-          # 固定使用兼容性最好的 UM_TINYS3
-          EXTRA_CFLAGS="-Wno-error" make BOARD=UM_TINYS3 GENERATE_CERTS=0 -j1
+          # 全程禁用Ninja，只用传统Make构建
+          unset CMAKE_GENERATOR
+          EXTRA_CFLAGS="-Wno-error" make BOARD=ESP32_GENERIC_C3 GENERATE_CERTS=0 -j1
 
-      - name: Download bin
+      - name: 上传固件
         uses: actions/upload-artifact@v4
         with:
-          path: ports/esp32/build-UM_TINYS3/firmware.bin
-          name: firmware_s3
+          path: ports/esp32/build-ESP32_GENERIC_C3/firmware.bin
+          name: esp32_firmware_test
