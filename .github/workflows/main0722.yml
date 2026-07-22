@@ -1,4 +1,6 @@
-name: ESP32-S3 自定义固件编译
+
+name: ESP32-S3 Custom Firmware Build
+
 on:
   push:
     branches: [master, main]
@@ -7,34 +9,60 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout MicroPython source
         uses: actions/checkout@v4
         with:
-          submodules: false
+          submodules: true  # 关键：MicroPython 依赖 mpy-cross 等子模块，必须设为 true
 
-      - name: Setup Python 3.8
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.8"
+          python-version: "3.10"  # 推荐使用较新的 Python 3.10+，兼容性更好
 
-      - name: Download ESP-IDF v4.4 official github
+      - name: Install System Dependencies
         run: |
-          git clone --depth 1 -b v4.4 https://github.com/espressif/esp-idf.git ~/esp-idf
+          sudo apt-get update
+          sudo apt-get install -y git wget flex bison gperf python3-pip python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
+
+      - name: Cache ESP-IDF tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.espressif
+            ~/esp-idf
+          key: ${{ runner.os }}-idf-v5.1-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-idf-v5.1-
+
+      - name: Setup ESP-IDF v5.1
+        run: |
+          # 克隆 ESP-IDF v5.1 (推荐用于 MicroPython v1.22+)
+          git clone --depth 1 -b release/v5.1 https://github.com/espressif/esp-idf.git ~/esp-idf
           cd ~/esp-idf
+          # 设置国内镜像加速下载 (可选)
           export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
-          export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
           ./install.sh esp32s3
 
-      - name: Build ESP32-S3 firmware
+      - name: Build MicroPython Cross Compiler
+        run: |
+          make -C mpy-cross
+
+      - name: Build ESP32-S3 Firmware
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
-          export CMAKE_GENERATOR="Unix Makefiles"
-          EXTRA_CFLAGS="-Wno-error" make BOARD=ESP32S3-WROOM-1 GENERATE_CERTS=0 -j1
+          
+          # 关键修正：使用标准的 GENERIC_S3 板型
+          # 如果需要 Octal PSRAM，可以添加 BOARD_VARIANT=SPIRAM_OCT
+          # 例如: make BOARD=ESP32_GENERIC_S3 BOARD_VARIANT=SPIRAM_OCT USER_C_MODULES=...
+          
+          make BOARD=ESP32_GENERIC_S3 -j$(nproc)
 
-      - name: Upload compiled firmware
+      - name: Upload Compiled Firmware
         uses: actions/upload-artifact@v4
         with:
-          path: ports/esp32/build-ESP32S3-WROOM-1/firmware.bin
-          name: esp32s3_frozen_firmware
+          name: esp32s3_generic_firmware
+          path: ports/esp32/build-ESP32_GENERIC_S3/firmware.bin
+          if-no-files-found: error
