@@ -2,7 +2,6 @@ name: ESP32-S3 自定义固件编译
 on:
   push:
     branches: [master, main]
-  # 网页可手动点击启动编译
   workflow_dispatch:
 
 jobs:
@@ -19,23 +18,22 @@ jobs:
         with:
           python-version: "3.8"
 
-      - name: 安装 ESP-IDF v4.4
+      - name: 下载 ESP-IDF v4.4（Gitee国内官方仓库）
         run: |
-          git clone --depth 1 -b v4.4 shturl.cc/B9RP0sF8GI0wBaOF37SKcs0ktCdNv ~/esp-idf
+          git clone --depth 1 -b v4.4 shturl.cc/dlfX88ku7t1fjiQh6WDkAcVvVPo8H1zfguDt ~/esp-idf
           cd ~/esp-idf
           export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
           export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
           ./install.sh esp32s3
 
-      - name: 仅编译ESP32-S3固件
+      - name: 编译ESP32-S3固件
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
-          # 关闭警告转为错误，规避底层代码告警终止编译
           EXTRA_CFLAGS="-Wno-error" make BOARD=ESP32_GENERIC_S3 GENERATE_CERTS=0 -j2
 
       - name: 上传成品固件
         uses: actions/upload-artifact@v4
         with:
           path: ports/esp32/build/firmware.bin
-          name: esp32s3_内置代码固件
+          name: esp32s3_frozen_firmware
