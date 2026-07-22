@@ -26,17 +26,15 @@ jobs:
           export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
           ./install.sh esp32s3
 
-      - name: Compile ESP32_GENERIC_S3 Firmware
+      - name: Compile TinyS3 Firmware
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
           export CMAKE_GENERATOR="Unix Makefiles"
-          # 板子严格填写列表内原名：ESP32_GENERIC_S3
-          EXTRA_CFLAGS="-Wno-error" make BOARD=ESP32_GENERIC_S3 GENERATE_CERTS=0 -j1
+          EXTRA_CFLAGS="-Wno-error" make BOARD=UM_TINYS3 GENERATE_CERTS=0 -j1
 
-      - name: Upload compiled firmware.bin
+      - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
-          # 编译输出文件夹固定 build-板子名称
-          path: ports/esp32/build-ESP32_GENERIC_S3/firmware.bin
-          name: esp32s3_frozen_custom_firmware
+          path: ports/esp32/build-UM_TINYS3/firmware.bin
+          name: esp32s3_frozen_firmware
