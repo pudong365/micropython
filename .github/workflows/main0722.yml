@@ -18,15 +18,15 @@ jobs:
         with:
           python-version: "3.8"
 
-      - name: Install ESP-IDF 5.0
+       - name: Install ESP-IDF v5.3
         run: |
-          git clone --depth 1 -b v5.0 https://github.com/espressif/esp-idf.git ~/esp-idf
+          git clone --depth 1 -b v5.3 https://github.com/espressif/esp-idf.git ~/esp-idf
           cd ~/esp-idf
           export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
           export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
           python -m pip install --upgrade pip==24.0
           python -m pip install setuptools
-          ./install.sh esp32s3
+          ./install.sh esp32s3  
 
       - name: 删除 berkeley-db 强制检查
         run: |
