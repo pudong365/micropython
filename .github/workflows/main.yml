@@ -1,76 +1,39 @@
-name: Build MicroPython ESP32-S3 Firmware for N16R8
-
+name: Build Custom ESP32-S3 MicroPython
 on:
+  push:
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-
+    runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        submodules: 'recursive'
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
 
-    - name: Install ESP-IDF dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y git wget flex bison gperf python3 python3-pip \
-          python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util \
-          libusb-1.0-0
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
 
-    - name: Install ESP-IDF v4.4.8
-      run: |
-        git clone -b release/v4.4 --recursive https://github.com/espressif/esp-idf.git $HOME/esp-idf
-        cd $HOME/esp-idf
-        ./install.sh
+      - name: Download ESP-IDF v4.4
+        run: |
+          git clone -b v4.4 --recursive shturl.cc/8NjSP8PEUaixs4MixUsguXLTI5qcY ~/esp-idf
+          cd ~/esp-idf
+          export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
+          export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+          ./install.sh esp32s3
 
-    - name: Build mpy-cross
-      run: |
-        cd $GITHUB_WORKSPACE/mpy-cross
-        make
+      - name: Build MicroPython Firmware
+        run: |
+          source ~/esp-idf/export.sh
+          cd ports/esp32
+          make BOARD=ESP32S3 GENERATE_CERTS=0 -j4
 
-    - name: Configure and Build MicroPython firmware
-      run: |
-        # 设置 ESP-IDF 环境
-        source $HOME/esp-idf/export.sh
-        
-        cd $GITHUB_WORKSPACE/ports/esp32
-        
-        # 清理
-        make clean || true
-        
-        # 设置目标芯片为 ESP32-S3
-        # 通过 BOARD 变量指定板子类型，或者修改 Makefile
-        # 对于 ESP32-S3，通常使用 BOARD=GENERIC_S3
-        
-        # 创建配置文件来启用 16MB Flash 和 Octal PSRAM
-        cat > boards/GENERIC_S3/mpconfigboard.h << 'EOF'
-// Enable 16MB Flash and 8MB Octal PSRAM
-#define MICROPY_HW_BOARD_NAME "ESP32-S3-N16R8"
-#define MICROPY_HW_MCU_NAME   "ESP32-S3"
-#define MICROPY_PY_BLUETOOTH  (1)
-#define MICROPY_BLE_IRQ_MULTIPLE (1)
-
-// Flash size
-#define MICROPY_HW_SPIFLASH_SIZE_BITS (16 * 1024 * 1024 * 8)
-
-// PSRAM settings for Octal PSRAM
-#define MICROPY_HW_ENABLE_PSRAM       (1)
-#define MICROPY_HW_PSRAM_OCTAL        (1)
-#define MICROPY_HW_PSRAM_SIZE         (8 * 1024 * 1024)
-EOF
-        
-        # 编译
-        make BOARD=GENERIC_S3
-
-    - name: Upload firmware artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: micropython_esp32s3_n16r8_firmware
-        path: |
-          ${{ github.workspace }}/ports/esp32/build-GENERIC_S3/bootloader/bootloader.bin
-          ${{ github.workspace }}/ports/esp32/build-GENERIC_S3/partition_table/partition-table.bin
-          ${{ github.workspace }}/ports/esp32/build-GENERIC_S3/micropython.bin
-        retention-days: 30
+      - name: Upload Firmware Bin
+        uses: actions/upload-artifact@v4
+        with:
+          path: ports/esp32/build/firmware.bin
+          name: esp32s3-firmware
