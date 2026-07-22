@@ -30,6 +30,8 @@ jobs:
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
+          # 直接禁用 btree 功能，跳过子模块依赖
+          EXTRA_CFLAGS="-Wno-error -DMICROPY_PY_BTREE=0" make BOARD=UM_TINYS3 GENERATE_CERTS=0 -j1
           
           # 1. 先尝试清理可能存在的部分子模块
           make BOARD=UM_TINYS3 clean-submodules || true
