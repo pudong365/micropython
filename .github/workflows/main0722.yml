@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # 改用 22.04，与成功 workflow 一致
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
@@ -30,26 +30,28 @@ jobs:
         run: |
           git clone --depth 1 -b v5.0 https://github.com/espressif/esp-idf.git ~/esp-idf
           cd ~/esp-idf
-          python -m pip install --upgrade pip setuptools wheel
+          # 安装 ESP-IDF 工具（会创建虚拟环境）
           ./install.sh esp32s3
+          
+          # 关键步骤：激活虚拟环境，手动安装 setuptools
+          source ~/esp-idf/export.sh
+          python -m pip install --upgrade pip setuptools wheel
+          
+          # 验证安装
+          python -c "import pkg_resources; print('pkg_resources 可用')"
 
       - name: Build firmware
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
           
-          # 清理旧配置（参考成功 workflow）
           rm -rf build sdkconfig
-          
-          # 设置目标芯片（参考成功 workflow）
           idf.py set-target esp32s3
           
-          # 通过环境变量设置 Flash 和 PSRAM（参考成功 workflow）
           export CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
           export CONFIG_SPIRAM=y
           export CONFIG_SPIRAM_MODE_OCT=y
           
-          # 编译（使用 make，保持 MicroPython 官方方式）
           make BOARD=UM_TINYS3 -j4
 
       - name: Upload firmware
