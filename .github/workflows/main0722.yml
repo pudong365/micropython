@@ -8,64 +8,34 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout MicroPython
         uses: actions/checkout@v4
         with:
           repository: micropython/micropython
-          ref: v1.21.0
+          ref: v1.20.0
           submodules: 'recursive'
 
-      - name: Python 3.8
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.8"
+          python-version: '3.9'
 
-      - name: Install ESP-IDF v5.3
+      - name: Install ESP-IDF v5.0
         run: |
-          git clone --depth 1 -b v5.3 https://github.com/espressif/esp-idf.git ~/esp-idf
+          git clone --depth 1 -b v5.0 https://github.com/espressif/esp-idf.git ~/esp-idf
           cd ~/esp-idf
           export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
           export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
-          python -m pip install --upgrade pip==24.0
-          python -m pip install setuptools
           ./install.sh esp32s3
 
-      - name: 删除 berkeley-db 强制检查
-        run: |
-          cd ports/esp32
-          # 使用 Python 脚本精确删除包含错误检查的行
-          python3 -c "
-          with open('../../extmod/extmod.cmake', 'r') as f:
-              lines = f.readlines()
-          with open('../../extmod/extmod.cmake', 'w') as f:
-              skip_next = False
-              for line in lines:
-                  # 如果这行包含错误检查的关键词，跳过不写入
-                  if 'MICROPY_PY_BTREE' in line and 'berkeley-db' in line and 'message(FATAL_ERROR' in line:
-                      print('跳过错误行:', line.strip())
-                      skip_next = True
-                      continue
-                  # 如果是错误块内的 endif() 行，也跳过
-                  if skip_next and 'endif()' in line:
-                      print('跳过对应的 endif 行:', line.strip())
-                      skip_next = False
-                      continue
-                  f.write(line)
-          print('删除完成')
-          "
-          
-          # 强制禁用 btree 功能
-          echo "#define MICROPY_PY_BTREE (0)" >> mpconfigport.h
-          echo "已强制禁用 MICROPY_PY_BTREE"
-
-      - name: Compile firmware
+      - name: Build firmware
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
-          EXTRA_CFLAGS="-Wno-error" make BOARD=UM_TINYS3 GENERATE_CERTS=0 -j1
+          make BOARD=UM_TINYS3 -j4
 
-      - name: Download bin
+      - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
+          name: firmware_um_tinys3
           path: ports/esp32/build-UM_TINYS3/firmware.bin
-          name: firmware_s3
