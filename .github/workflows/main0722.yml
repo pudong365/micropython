@@ -7,6 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: espressif/idf:v5.0
     steps:
       - name: Checkout MicroPython
         uses: actions/checkout@v4
@@ -15,29 +17,8 @@ jobs:
           ref: v1.20.0
           submodules: 'recursive'
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-
-      - name: Install ESP-IDF v5.0
-        run: |
-          git clone --depth 1 -b v5.0 https://github.com/espressif/esp-idf.git ~/esp-idf
-          cd ~/esp-idf
-          export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
-          export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
-          
-          # 安装 ESP-IDF 工具
-          ./install.sh esp32s3
-          
-          # 修复 Python 虚拟环境
-          source ~/esp-idf/export.sh
-          python -m pip install --upgrade pip setuptools wheel
-          pip install -r tools/requirements/requirements.core.txt
-
       - name: Build firmware
         run: |
-          source ~/esp-idf/export.sh
           cd ports/esp32
           make BOARD=UM_TINYS3 -j4
 
