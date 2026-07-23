@@ -18,6 +18,9 @@ jobs:
 
       - name: Build firmware
         run: |
+          # 先加载 ESP-IDF 环境变量
+          source /opt/esp/idf/export.sh
+          
           cd ports/esp32
           
           # 清理旧配置
