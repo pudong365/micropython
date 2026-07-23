@@ -7,6 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    container:
+      image: espressif/idf:v5.0
 
     steps:
       - name: Checkout code
@@ -14,44 +16,22 @@ jobs:
         with:
           submodules: 'recursive'
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-
-      - name: Install ESP-IDF dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git wget flex bison gperf python3 python3-pip \
-            python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util \
-            libusb-1.0-0
-
-      - name: Install ESP-IDF v5.0
-        run: |
-          git clone --depth 1 -b v5.0 https://github.com/espressif/esp-idf.git ~/esp-idf
-          cd ~/esp-idf
-          # 安装 ESP-IDF 工具（会创建虚拟环境）
-          ./install.sh esp32s3
-          
-          # 关键步骤：激活虚拟环境，手动安装 setuptools
-          source ~/esp-idf/export.sh
-          python -m pip install --upgrade pip setuptools wheel
-          
-          # 验证安装
-          python -c "import pkg_resources; print('pkg_resources 可用')"
-
       - name: Build firmware
         run: |
-          source ~/esp-idf/export.sh
           cd ports/esp32
           
+          # 清理旧配置
           rm -rf build sdkconfig
+          
+          # 设置目标芯片
           idf.py set-target esp32s3
           
+          # 设置 Flash 和 PSRAM 环境变量
           export CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
           export CONFIG_SPIRAM=y
           export CONFIG_SPIRAM_MODE_OCT=y
           
+          # 编译
           make BOARD=UM_TINYS3 -j4
 
       - name: Upload firmware
