@@ -20,6 +20,7 @@ jobs:
         with:
           esp_idf_version: v5.0
           target: esp32s3
+          idf_build_cmd: 'echo "环境准备完成，跳过自动构建"'
 
       - name: Build firmware
         run: |
