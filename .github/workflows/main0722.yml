@@ -15,35 +15,16 @@ jobs:
           ref: v1.20.0
           submodules: 'recursive'
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
         with:
-          python-version: '3.9'
-
-      - name: Install ESP-IDF v5.0
-        run: |
-          git clone --depth 1 -b v5.0 https://github.com/espressif/esp-idf.git ~/esp-idf
-          cd ~/esp-idf
-          export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
-          export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
-          
-          # 先升级系统的 pip 和 setuptools
-          python -m pip install --upgrade pip setuptools
-          
-          # 运行 install.sh，但让它跳过 Python 环境创建（我们手动创建）
-          ./install.sh esp32s3 --skip-python
-          
-          # 手动创建并配置 Python 虚拟环境
-          cd ~/esp-idf
-          python -m venv ~/.espressif/python_env/idf5.0_py3.9_env
-          source ~/.espressif/python_env/idf5.0_py3.9_env/bin/activate
-          pip install --upgrade pip setuptools wheel
-          pip install -r tools/requirements/requirements.core.txt
-          deactivate
+          esp_idf_version: v5.0
+          target: esp32s3
 
       - name: Build firmware
         run: |
-          source ~/esp-idf/export.sh
+          # 关键步骤：加载 ESP-IDF 环境
+          source /opt/esp/idf/export.sh
           cd ports/esp32
           make BOARD=UM_TINYS3 -j4
 
