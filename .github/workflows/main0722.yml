@@ -26,18 +26,19 @@ jobs:
           cd ~/esp-idf
           export IDF_GITHUB_ASSETS="dl.espressif.cn/github_assets"
           export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
-          # 安装 Python 依赖
-          python -m pip install --upgrade pip setuptools wheel
-          # 安装 ESP-IDF 工具（只安装 esp32s3 相关）
+          
+          # 安装 ESP-IDF 工具
           ./install.sh esp32s3
+          
+          # 修复 Python 虚拟环境
+          source ~/esp-idf/export.sh
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r tools/requirements/requirements.core.txt
 
       - name: Build firmware
         run: |
-          # 加载 ESP-IDF 环境
           source ~/esp-idf/export.sh
-          # 进入正确的目录
           cd ports/esp32
-          # 编译
           make BOARD=UM_TINYS3 -j4
 
       - name: Upload firmware
