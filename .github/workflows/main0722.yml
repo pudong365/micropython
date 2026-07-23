@@ -23,7 +23,6 @@ jobs:
 
       - name: Build firmware
         run: |
-          # 关键步骤：加载 ESP-IDF 环境
           source /opt/esp/idf/export.sh
           cd ports/esp32
           make BOARD=UM_TINYS3 -j4
