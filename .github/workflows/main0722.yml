@@ -13,10 +13,18 @@ jobs:
         with:
           submodules: 'recursive'
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
       - name: Install ESP-IDF
         run: |
           git clone --depth 1 -b v5.0 https://github.com/espressif/esp-idf.git ~/esp-idf
-          ~/esp-idf/install.sh esp32s3
+          cd ~/esp-idf
+          # 安装前先确保 pip 和 setuptools 是最新的
+          python -m pip install --upgrade pip setuptools wheel
+          ./install.sh esp32s3
 
       - name: Build firmware
         run: |
