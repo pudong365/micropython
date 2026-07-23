@@ -18,9 +18,21 @@ jobs:
 
       - name: Build firmware
         run: |
-          # 先加载 ESP-IDF 环境变量
+          # 查找 export.sh 的位置
+          find / -name "export.sh" 2>/dev/null || echo "未找到 export.sh"
+          
+          # 如果找到的位置不是 /opt/esp/idf/export.sh，使用实际路径
           source /opt/esp/idf/export.sh
           
+          cd ports/esp32
+          rm -rf build sdkconfig
+          idf.py set-target esp32s3
+          
+          export CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+          export CONFIG_SPIRAM=y
+          export CONFIG_SPIRAM_MODE_OCT=y
+          
+          make BOARD=UM_TINYS3 -j4
           cd ports/esp32
           
           # 清理旧配置
