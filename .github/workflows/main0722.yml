@@ -7,23 +7,25 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: espressif/idf:v5.0
     steps:
-      - name: Checkout MicroPython
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
-          repository: micropython/micropython
-          ref: v1.20.0
           submodules: 'recursive'
+
+      - name: Install ESP-IDF
+        run: |
+          git clone --depth 1 -b v5.0 https://github.com/espressif/esp-idf.git ~/esp-idf
+          ~/esp-idf/install.sh esp32s3
 
       - name: Build firmware
         run: |
+          source ~/esp-idf/export.sh
           cd ports/esp32
           make BOARD=UM_TINYS3 -j4
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
-          name: firmware_um_tinys3
+          name: firmware
           path: ports/esp32/build-UM_TINYS3/firmware.bin
