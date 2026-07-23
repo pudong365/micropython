@@ -6,7 +6,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # 改用 22.04，与成功 workflow 一致
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,11 +19,17 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install ESP-IDF
+      - name: Install ESP-IDF dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git wget flex bison gperf python3 python3-pip \
+            python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util \
+            libusb-1.0-0
+
+      - name: Install ESP-IDF v5.0
         run: |
           git clone --depth 1 -b v5.0 https://github.com/espressif/esp-idf.git ~/esp-idf
           cd ~/esp-idf
-          # 安装前先确保 pip 和 setuptools 是最新的
           python -m pip install --upgrade pip setuptools wheel
           ./install.sh esp32s3
 
@@ -30,6 +37,19 @@ jobs:
         run: |
           source ~/esp-idf/export.sh
           cd ports/esp32
+          
+          # 清理旧配置（参考成功 workflow）
+          rm -rf build sdkconfig
+          
+          # 设置目标芯片（参考成功 workflow）
+          idf.py set-target esp32s3
+          
+          # 通过环境变量设置 Flash 和 PSRAM（参考成功 workflow）
+          export CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+          export CONFIG_SPIRAM=y
+          export CONFIG_SPIRAM_MODE_OCT=y
+          
+          # 编译（使用 make，保持 MicroPython 官方方式）
           make BOARD=UM_TINYS3 -j4
 
       - name: Upload firmware
@@ -37,3 +57,4 @@ jobs:
         with:
           name: firmware
           path: ports/esp32/build-UM_TINYS3/firmware.bin
+          retention-days: 30
